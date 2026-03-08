@@ -5,7 +5,8 @@ langchain-text-splitters
 pypdf
 pymupdf
 sentence-transformers
-faiss-cpu
-chromadb
 streamlit
 langchain-groq
+pinecone
+pinecone-text
+pinecone-notebooks

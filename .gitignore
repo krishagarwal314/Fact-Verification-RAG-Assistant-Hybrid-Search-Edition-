@@ -15,3 +15,8 @@ app.py
 main.py
 notebook
 .env
+images
+input_pdf
+.gitignore
+
+
