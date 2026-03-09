@@ -42,7 +42,13 @@ The overall pattern here. Instead of asking the LLM to answer from its training 
 We use Groq as the inference provider for the LLaMA 3.1 8B Instant model. Groq offers very fast inference speeds which makes the response feel close to real-time even for a document this large.
 
 **Streamlit**
-Used for the front-end. Handles file upload, chat interface, and session state management to persist the retriever across messages without re-indexing the document on each question.
+Used for the front-end. Makes HTTP requests to the FastAPI backend — it has no direct LangChain or Pinecone imports. Session state stores the `session_id` returned on upload so the correct Pinecone namespace is referenced on every query.
+
+**FastAPI**
+Used to build the REST backend. Exposes two endpoints — `/upload` for ingesting a PDF and `/response` for querying it. Decoupling the backend from the frontend means the RAG logic is independent of the UI layer and can serve multiple users simultaneously.
+
+**Pydantic**
+Used for request validation in the FastAPI routes. Enforces that incoming requests have the correct fields and types before they reach the RAG chain.
 
 ---
 
