@@ -1,6 +1,8 @@
 # Fact Verification RAG Assistant (Hybrid Search Edition)
 
-This is a document fact-verification assistant built with Streamlit. You upload a PDF, ask a question, and the app tells you whether the document supports or contradicts your claim, along with the exact passage that backs up the answer.
+This is a document fact-verification assistant. You upload a PDF, ask a question, and the app tells you whether the document supports or contradicts your claim, along with the exact passage that backs up the answer.
+
+This is v2 of the project. The original version (v1) using FAISS for dense-only retrieval is here: https://github.com/krishagarwal314/fact_verification_RAG_assistant
 
 The original version of this project used FAISS for retrieval, which is a dense vector search approach. This version replaces that with a hybrid search setup using Pinecone, which combines both dense and sparse retrieval. The reason for the switch is explained below.
 
