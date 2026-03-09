@@ -56,8 +56,8 @@ Used for request validation in the FastAPI routes. Enforces that incoming reques
 
 ```text
 REIMP/
-├── app2.py              # Main Streamlit application
-├── app3.py              # Alternate / experimental version
+├── app2.py              # Backend
+├── app3.py              # Frontend
 ├── images_2/
 │   ├── yes.png          # Output screenshot showing a supported claim
 │   └── yessrc.png       # Output screenshot showing source evidence
