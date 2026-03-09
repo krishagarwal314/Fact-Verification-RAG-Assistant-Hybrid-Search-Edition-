@@ -112,8 +112,25 @@ I also learned that tuning the `alpha` parameter for hybrid search is not trivia
 Another thing that became clear is how important the prompt structure is for a fact-verification use case specifically. The model needs to be explicitly told not to use external knowledge and to respond with "not supported by document" rather than guessing. Without that guardrail the outputs are not trustworthy for verification purposes.
 
 
+## Architecture (Updated)
 
-## Updates
-- Decoupled into FastAPI backend + Streamlit frontend
-- Fixed Pinecone namespace isolation (chunks from different docs were mixing)
-- Added multi-user session support via UUID namespaces
+The latest version (new commit) decouples the app into a FastAPI backend and Streamlit frontend.
+```
+Streamlit frontend (port 8501)
+        ↓ HTTP requests
+FastAPI backend (port 8000)
+        ↓
+Pinecone hybrid index
+```
+
+**What changed:**
+- `app2.py` → FastAPI backend (all RAG logic lives here)
+- `app3.py` → Streamlit frontend (only makes HTTP calls, zero LangChain imports)
+- Fixed Pinecone namespace isolation — previously chunks from different documents were mixing in the same index. Each upload now gets a unique UUID namespace.
+- Added multi-user session support via the namespace as a session ID.
+
+**Run:**
+```bash
+uvicorn app2:app --reload   # terminal 1
+streamlit run app3.py       # terminal 2
+```
