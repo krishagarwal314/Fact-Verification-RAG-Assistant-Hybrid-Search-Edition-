@@ -1,5 +1,5 @@
-#fact verification
-import streamlit as st
+#fact verification backend using fastapi
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import ChatPromptTemplate
@@ -14,6 +14,11 @@ from langchain_community.retrievers import PineconeHybridSearchRetriever
 from pinecone_text.sparse import BM25Encoder, bm25_encoder
 from pinecone import Pinecone
 from pinecone import ServerlessSpec
+from fastapi import FastAPI, UploadFile, File #creating our backend
+from pydantic import BaseModel #enforcing data type to input
+import uuid #for creating a unique session_id
+import uvicorn
+
 
 
 #API keys
@@ -24,14 +29,8 @@ os.environ["api_key"] = os.getenv("pinecone_key")
 
 api_key = os.getenv("pinecone_key")
 
-
-st.title("fact verification")
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "vectorstore" not in st.session_state:
-    st.session_state.vectorstore = None
-if "retriever" not in st.session_state:
-    st.session_state.retriever = None
+#starting app
+app = FastAPI()
 
 index_name = "hybrid-search-langchain-pinecone-v2"
 
@@ -54,11 +53,13 @@ embedding = HuggingFaceEmbeddings(
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
 )
 
-uploaded_file = st.file_uploader("upload file", type="pdf")
 
-if uploaded_file:
+retrievers: dict = {} #for mupliple users (still uses in memory, to extend we can use a database like redis)
+
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)): 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-        temp_file.write(uploaded_file.read())
+        temp_file.write(await file.read())
         temp_path = temp_file.name
     
     loader = PyPDFLoader(temp_path)
@@ -74,22 +75,20 @@ if uploaded_file:
     texts = [doc.page_content for doc in docs]
 
     bm25_encoder.fit(texts)
-
-    bm25_encoder.dump("bm25_values.json")
-
-    bm25_encoder = BM25Encoder().load("bm25_values.json")
-
+    
+    namespace = str(uuid.uuid4()) #to create separate namespace for each file uploaded in different sessions 
     retriever = PineconeHybridSearchRetriever(
         embeddings = embedding,
         sparse_encoder = bm25_encoder,
         index = index,
         top_k = 8,
-        alpha = 0.35
+        alpha = 0.35,
+        namespace = namespace,
     )
     retriever.add_texts(texts = texts)
 
-    st.session_state.retriever = retriever
-    st.success("doc uploaded successfully")
+    retrievers[namespace] = retriever
+    return {"status": "done", "session_id": namespace, "chunks": len(texts)}
 
 #llm
 
@@ -122,39 +121,34 @@ Question:
 {question}
 """)
 
-user_input = st.chat_input("ask")
+class request_format(BaseModel):  #enforcing request format
+    session_id: str
+    question: str
 
-if user_input:
-    with st.chat_message("user"):
-        st.write(user_input)
-    
-    st.session_state.messages.append(("user",user_input))
-    if st.session_state.retriever:
-        retriever = st.session_state.retriever
-        def format_docs(docs):
-                return "\n\n".join(doc.page_content for doc in docs)
+@app.post("/response")
+async def verify(request: request_format):
+    retriever = retrievers.get(request.session_id)
+
+    if retriever is None:
+        return {"error": "Pls upload a doc"}
+
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
         
-        rag_chain = (
-            {
-                "context": retriever | format_docs,
-                "question": RunnablePassthrough()
-            }
-            | prompt
-            | model
-            | StrOutputParser()
-        )
+    rag_chain = (
+        {
+            "context": retriever | format_docs,
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | model
+        | StrOutputParser()
+    )
+    response = rag_chain.invoke(request.question)
+    return {"answer": response}
 
-        response = rag_chain.invoke(user_input)
-    else:
-        chain = prompt | model
-        response = chain.invoke({
-            "context": " ",
-            "question": user_input
-        })
-    
-    with st.chat_message("assistant"):
-        st.write(response)
-    
-    st.session_state.messages.append(("assistant", response))
-    
-    
+
+#starting the server
+
+if __name__ == "__main__":
+    uvicorn.run("app2:app", host="0.0.0.0", port=8000, reload=True)

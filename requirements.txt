@@ -10,3 +10,7 @@ langchain-groq
 pinecone
 pinecone-text
 pinecone-notebooks
+fastapi
+uvicorn
+python-multipart
+requests
