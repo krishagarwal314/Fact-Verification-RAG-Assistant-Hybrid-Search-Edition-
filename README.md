@@ -46,21 +46,22 @@ Used for the front-end. Handles file upload, chat interface, and session state m
 
 ---
 
-## Project Structure
+## Project Structure (updated for new commit)
 
-```
+```text
 REIMP/
-|-- app2.py              # Main application (hybrid search version)
-|-- app.py               # Original FAISS version
-|-- bm25_values.json     # Fitted BM25 encoder weights (generated at runtime)
-|-- images_2/
-|   |-- yes.png          # Output screenshot showing a supported claim
-|   |-- yessrc.png       # Output screenshot showing source evidence
-|-- input_pdf/           # Sample input PDFs
-|-- .env                 # API keys (not committed)
-|-- requirements.txt
-|-- pyproject.toml
-|-- README.md
+├── app2.py              # Main Streamlit application
+├── app3.py              # Alternate / experimental version
+├── images_2/
+│   ├── yes.png          # Output screenshot showing a supported claim
+│   └── yessrc.png       # Output screenshot showing source evidence
+├── inputpdf/            # Sample input PDFs
+├── .gitignore
+├── .python-version
+├── requirements.txt
+├── pyproject.toml
+├── uv.lock
+└── README.md
 ```
 
 ---
@@ -109,3 +110,10 @@ The main takeaway from this project is that retrieval strategy matters a lot dep
 I also learned that tuning the `alpha` parameter for hybrid search is not trivial. It depends entirely on the document and the kinds of queries you expect. For the Dodd-Frank Act, keywords mattered more than semantic similarity, so a lower alpha worked better.
 
 Another thing that became clear is how important the prompt structure is for a fact-verification use case specifically. The model needs to be explicitly told not to use external knowledge and to respond with "not supported by document" rather than guessing. Without that guardrail the outputs are not trustworthy for verification purposes.
+
+
+
+## Updates
+- Decoupled into FastAPI backend + Streamlit frontend
+- Fixed Pinecone namespace isolation (chunks from different docs were mixing)
+- Added multi-user session support via UUID namespaces
